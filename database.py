@@ -30,6 +30,15 @@ class BudgetDatabase:
                 goal REAL NOT NULL
             )
         ''')
+        self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS savings_goals (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                goal_name TEXT NOT NULL,
+                target_amount REAL NOT NULL,
+                current_amount REAL NOT NULL,
+                target_date TEXT NOT NULL
+            )
+        ''')
         self.conn.commit()
 
     def add_income(self, amount, source, date):
@@ -55,6 +64,27 @@ class BudgetDatabase:
     def get_expenses_by_category(self):
         self.cursor.execute('SELECT category, SUM(amount) FROM expenses GROUP BY category')
         return self.cursor.fetchall()
+
+    def add_savings_goal(self, goal_name, target_amount, current_amount, target_date):
+        self.cursor.execute('''
+            INSERT INTO savings_goals (goal_name, target_amount, current_amount, target_date) 
+            VALUES (?, ?, ?, ?)
+        ''', (goal_name, target_amount, current_amount, target_date))
+        self.conn.commit()
+
+    def update_savings_amount(self, goal_name, new_amount):
+        self.cursor.execute('UPDATE savings_goals SET current_amount = ? WHERE goal_name = ?', (new_amount, goal_name))
+        self.conn.commit()
+
+    def get_savings_goals(self):
+        self.cursor.execute('SELECT * FROM savings_goals')
+        return self.cursor.fetchall()
+
+    def reset_database(self):
+        tables = ['income', 'expenses', 'budget_goals', 'savings_goals']
+        for table in tables:
+            self.cursor.execute(f'DELETE FROM {table}')
+        self.conn.commit()
 
     def close(self):
         self.conn.close()
