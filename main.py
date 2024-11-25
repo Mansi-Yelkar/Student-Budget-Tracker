@@ -6,7 +6,7 @@ from database import BudgetDatabase
 class FunkyBudgetTrackerApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Funky Student Budget Tracker")
+        self.root.title("Student Budget Tracker")
         self.root.geometry("900x600")
         self.root.configure(bg='#ffe4b5')
         self.root.minsize(800, 500)
@@ -50,6 +50,11 @@ class FunkyBudgetTrackerApp:
 
         dashboard_frame = tk.Frame(self.content_frame, bg='#fff5ee')
         dashboard_frame.pack(expand=True, fill='both', padx=10, pady=10)
+
+        # Add reset database button
+        reset_btn = tk.Button(dashboard_frame, text="Reset Database", bg='#ff4500', fg='white',
+                              font=('Comic Sans MS', 10, 'bold'), command=self.reset_database)
+        reset_btn.pack(anchor='ne', pady=5, padx=5)
 
         total_income = self.db.get_total_income()
         total_expenses = self.db.get_total_expenses()
@@ -141,7 +146,45 @@ class FunkyBudgetTrackerApp:
         savings_frame.pack(expand=True, fill='both', padx=10, pady=10)
 
         tk.Label(savings_frame, text="💼 Savings Tracker", font=('Comic Sans MS', 16, 'bold'), bg='#fff5ee').pack(pady=10)
-        # Here, you can implement savings tracking and goals
+
+        # Add new savings goal section
+        goal_frame = tk.Frame(savings_frame, bg='#fff5ee')
+        goal_frame.pack(fill='x', pady=10)
+
+        goal_name = self.create_entry(goal_frame, "Goal Name")
+        target_amount = self.create_entry(goal_frame, "Target Amount ($)")
+        current_amount = self.create_entry(goal_frame, "Current Amount ($)")
+        target_date = self.create_entry(goal_frame, "Target Date (YYYY-MM-DD)")
+
+        def add_goal():
+            try:
+                name = goal_name.get()
+                target = float(target_amount.get())
+                current = float(current_amount.get())
+                date = target_date.get()
+                self.db.add_savings_goal(name, target, current, date)
+                messagebox.showinfo("Success", "Savings goal added!")
+                self.show_savings_tracker()
+            except ValueError:
+                messagebox.showerror("Error", "Please enter valid numbers for amounts")
+
+        add_btn = tk.Button(goal_frame, text="Add Savings Goal", bg='#ff1493', fg='white',
+                            font=('Comic Sans MS', 10, 'bold'), command=add_goal)
+        add_btn.pack(pady=10)
+
+        # Display existing savings goals
+        goals_list_frame = tk.Frame(savings_frame, bg='#fff5ee')
+        goals_list_frame.pack(fill='both', expand=True, pady=10)
+
+        tk.Label(goals_list_frame, text="Current Savings Goals",
+                 font=('Comic Sans MS', 14, 'bold'), bg='#fff5ee').pack(pady=5)
+
+        for goal in self.db.get_savings_goals():
+            goal_item = tk.Frame(goals_list_frame, bg='#ffd700', relief='raised', bd=2)
+            goal_item.pack(fill='x', pady=5, padx=10)
+
+            tk.Label(goal_item, text=f"Goal: {goal[1]}", bg='#ffd700').pack(side='left', padx=5)
+            tk.Label(goal_item, text=f"Progress: ${goal[3]}/{goal[2]}", bg='#ffd700').pack(side='right', padx=5)
 
     def create_entry(self, parent, label_text):
         frame = tk.Frame(parent, bg='#fff5ee')
@@ -189,6 +232,12 @@ class FunkyBudgetTrackerApp:
                 messagebox.showinfo("Success", f"Budget goal set for {category}!")
             except ValueError:
                 messagebox.showerror("Error", f"Invalid goal for {category}. Please enter a number.")
+
+    def reset_database(self):
+        if messagebox.askyesno("Confirm Reset", "Are you sure you want to reset the database? This will delete all data."):
+            self.db.reset_database()
+            messagebox.showinfo("Success", "Database has been reset!")
+            self.show_dashboard()
 
 # Main Application
 def main():
